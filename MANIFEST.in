@@ -1,0 +1,6 @@
+include src/jpeg4py/*.py
+include tests/*.py
+include LICENSE
+include README
+include README.md
+include setup.py
