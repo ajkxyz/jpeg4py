@@ -7,7 +7,7 @@ Tested with Python 2.7, Python 3.3 and PyPy on Ubuntu 13.10.
 
 The purpose of this package is to provide thread-safe with releasing of GIL
 bindings for libjpeg-turbo which will work with numpy arrays on
-Python 2, 3 and PyPy with included numpy.
+Python 2, 3 and PyPy (when numpy will work with it).
 
 
 Covered TurboJPEG API:
