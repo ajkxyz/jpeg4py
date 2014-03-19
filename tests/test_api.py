@@ -47,9 +47,11 @@ class Test(unittest.TestCase):
     def setUp(self):
         logging.basicConfig(level=logging.DEBUG)
         dirnme = os.path.dirname(__file__)
-        self.raw = numpy.fromfile(os.path.join(dirnme, "test.jpg")
-                                  if len(dirnme) else "test.jpg",
-                                  dtype=numpy.uint8)
+        fnme = os.path.join(dirnme, "test.jpg") if len(dirnme) else "test.jpg"
+        fin = open(fnme, "rb")
+        self.raw = numpy.empty(os.path.getsize(fnme), dtype=numpy.uint8)
+        fin.readinto(self.raw)
+        fin.close()
 
     def tearDown(self):
         pass
