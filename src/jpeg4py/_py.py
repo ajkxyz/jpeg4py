@@ -37,6 +37,8 @@ Original author: Alexey Kazantsev <a.kazantsev@samsung.com>
 Helper classes for libjpeg-turbo cffi bindings.
 """
 import jpeg4py._cffi as jpeg
+from jpeg4py._cffi import ffi, TJPF_RGB
+import numpy
 
 
 class JPEGRuntimeError(RuntimeError):
@@ -45,8 +47,159 @@ class JPEGRuntimeError(RuntimeError):
         self.code = code
 
 
-class JPEG(object):
+class Base(object):
     """Base class.
+
+    Attributes:
+        lib_: cffi handle to loaded shared library.
     """
-    def __init__(self):
-        self.lib_ = jpeg.lib  # to hold the reference
+    def __init__(self, lib_):
+        """Constructor.
+
+        Parameters:
+            lib_: cffi handle to loaded shared library.
+        """
+        if lib_ is None:
+            jpeg.initialize()
+            lib_ = jpeg.lib
+        self.lib_ = lib_
+
+    def get_last_error(self):
+        """Returns last error string.
+        """
+        return ffi.string(self.lib_.tjGetErrorStr()).decode("utf-8")
+
+
+class Handle(Base):
+    """Stores tjhandle pointer.
+
+    Attributes:
+        handle_: cffi tjhandle pointer.
+    """
+    def __init__(self, handle_, lib_):
+        """Constructor.
+
+        Parameters:
+            handle_: cffi tjhandle pointer.
+        """
+        self.handle_ = None
+        super(Handle, self).__init__(lib_)
+        self.handle_ = handle_
+
+    def release(self):
+        if self.handle_ is not None:
+            self.lib_.tjDestroy(self.handle_)
+            self.handle_ = None
+
+    def __del__(self):
+        self.release()
+
+
+class JPEG(Base):
+    """Main class.
+
+    Attributes:
+        decompressor: Handle object for decompressor.
+        source: numpy array with source data,
+                either encoded raw jpeg which may be decoded/transformed or
+                or source image for the later encode.
+        width: image width.
+        height: image height.
+        subsampling: level of chrominance subsampling.
+
+    Static attributes:
+        decompressors: list of decompressors for caching purposes.
+    """
+    decompressors = []
+
+    @staticmethod
+    def clear():
+        """Clears internal caches.
+        """
+        del JPEG.decompressors[:]
+
+    def __init__(self, source, lib_=None):
+        """Constructor.
+
+        Parameters:
+            source: source for JPEG operations (numpy array or file name).
+        """
+        super(JPEG, self).__init__(lib_)
+        self.decompressor = None
+        self.width = None
+        self.height = None
+        self.subsampling = None
+        if hasattr(source, "__array_interface__"):
+            self.source = source
+        else:
+            self.source = numpy.fromfile(source, dtype=numpy.uint8)
+
+    def _get_decompressor(self):
+        if self.decompressor is not None:
+            return
+        try:
+            self.decompressor = JPEG.decompressors.pop(-1)
+        except IndexError:
+            d = self.lib_.tjInitDecompress()
+            if d == jpeg.NULL:
+                raise JPEGRuntimeError(
+                    "tjInitDecompress() failed with error "
+                    "string %s" % self.get_last_error(), 0)
+            self.decompressor = Handle(d, self.lib_)
+
+    def parse_header(self):
+        """Parses JPEG header.
+
+        Fills self.width, self.height, self.subsampling.
+        """
+        self._get_decompressor()
+        w = ffi.new("int[]", 1)
+        h = ffi.new("int[]", 1)
+        s = ffi.new("int[]", 1)
+        n = self.lib_.tjDecompressHeader2(
+            self.decompressor.handle_,
+            ffi.cast("unsigned char*",
+                     self.source.__array_interface__["data"][0]),
+            self.source.nbytes, w, h, s)
+        if n:
+            raise JPEGRuntimeError("tjDecompressHeader2() failed with error "
+                                   "%d and error string %s" %
+                                   (n, self.get_last_error()), n)
+        self.width = w[0]
+        self.height = h[0]
+        self.subsampling = s[0]
+
+    def decode(self, dst=None, pixfmt=TJPF_RGB):
+        bpp = jpeg.tjPixelSize[pixfmt]
+        if dst is None:
+            if self.width is None:
+                self.parse_header()
+            sh = [self.height, self.width]
+            if bpp > 1:
+                sh.append(bpp)
+            dst = numpy.zeros(sh, dtype=numpy.uint8)
+        elif not hasattr(dst, "__array_interface__"):
+            raise ValueError("dst should be numpy array or None")
+        if len(dst.shape) < 2:
+            raise ValueError("dst shape length should 2 or 3")
+        if dst.nbytes < dst.shape[1] * dst.shape[0] * bpp:
+            raise ValueError(
+                "dst is too small to hold the requested pixel format")
+        self._get_decompressor()
+        n = self.lib_.tjDecompress2(
+            self.decompressor.handle_,
+            ffi.cast("unsigned char*",
+                     self.source.__array_interface__["data"][0]),
+            self.source.nbytes,
+            ffi.cast("unsigned char*", dst.__array_interface__["data"][0]),
+            dst.shape[1], dst.strides[0], dst.shape[0], pixfmt, 0)
+        if n:
+            raise JPEGRuntimeError("tjDecompress2() failed with error "
+                                   "%d and error string %s" %
+                                   (n, self.get_last_error()), n)
+        return dst
+
+    def __del__(self):
+        # Return decompressor to cache.
+        if self.decompressor is not None:
+            JPEG.decompressors.append(self.decompressor)

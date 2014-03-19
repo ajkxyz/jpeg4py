@@ -39,18 +39,76 @@ Tests some of the api in jpeg4py package.
 import unittest
 import logging
 import jpeg4py as jpeg
+import numpy
+import os
 
 
 class Test(unittest.TestCase):
     def setUp(self):
         logging.basicConfig(level=logging.DEBUG)
+        dirnme = os.path.dirname(__file__)
+        self.raw = numpy.fromfile(os.path.join(dirnme, "test.jpg")
+                                  if len(dirnme) else "test.jpg",
+                                  dtype=numpy.uint8)
 
     def tearDown(self):
         pass
 
+    def test_initialize(self):
+        jpeg.initialize()
+        lib = jpeg.lib
+        jpeg.initialize()
+        self.assertEqual(jpeg.lib, lib)
+
     def test_constants(self):
-        #self.assertEqual(jpeg.SOME_CONSTANT, SOME_NUMBER)
-        pass
+        self.assertEqual(jpeg.TJSAMP_444, 0)
+        self.assertEqual(jpeg.TJSAMP_422, 1)
+        self.assertEqual(jpeg.TJSAMP_420, 2)
+        self.assertEqual(jpeg.TJSAMP_GRAY, 3)
+        self.assertEqual(jpeg.TJSAMP_440, 4)
+        self.assertEqual(jpeg.TJPF_RGB, 0)
+        self.assertEqual(jpeg.TJPF_BGR, 1)
+        self.assertEqual(jpeg.TJPF_RGBX, 2)
+        self.assertEqual(jpeg.TJPF_BGRX, 3)
+        self.assertEqual(jpeg.TJPF_XBGR, 4)
+        self.assertEqual(jpeg.TJPF_XRGB, 5)
+        self.assertEqual(jpeg.TJPF_GRAY, 6)
+        self.assertEqual(jpeg.TJPF_RGBA, 7)
+        self.assertEqual(jpeg.TJPF_BGRA, 8)
+        self.assertEqual(jpeg.TJPF_ABGR, 9)
+        self.assertEqual(jpeg.TJPF_ARGB, 10)
+
+    def test_parse_header(self):
+        raw = self.raw.copy()
+        jp = jpeg.JPEG(raw)
+        jp.parse_header()
+        self.assertIsNotNone(jp.width)
+        self.assertIsNotNone(jp.height)
+        self.assertIsNotNone(jp.subsampling)
+        return jp
+
+    def test_clear(self):
+        jp = self.test_parse_header()
+        del jp
+        self.assertEqual(len(jpeg.JPEG.decompressors), 1)
+        jpeg.JPEG.clear()
+        self.assertEqual(len(jpeg.JPEG.decompressors), 0)
+
+    def test_decode(self):
+        jp = self.test_parse_header()
+        a = jp.decode()
+        self.assertEqual(len(a.shape), 3)
+        self.assertEqual(a.shape[0], jp.height)
+        self.assertEqual(a.shape[1], jp.width)
+        self.assertEqual(a.shape[2], 3)
+        a = jp.decode(pixfmt=jpeg.TJPF_GRAY)
+        self.assertEqual(len(a.shape), 2)
+        self.assertEqual(a.shape[0], jp.height)
+        self.assertEqual(a.shape[1], jp.width)
+        #import matplotlib.pyplot as pp
+        #pp.axis("off")
+        #pp.imshow(a)
+        #pp.show()
 
 
 if __name__ == "__main__":

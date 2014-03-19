@@ -37,12 +37,29 @@ Original author: Alexey Kazantsev <a.kazantsev@samsung.com>
 Init module.
 """
 
-# High-level interface.
-from jpeg4py._py import JPEGRuntimeError
+# High-level interface
+from jpeg4py._py import JPEG, JPEGRuntimeError
 
-# Low-level interface.
-from jpeg4py._cffi import ffi, lib
+# Low-level interface
+from jpeg4py._cffi import ffi, lib, initialize
 
-# Constants.
-#from opencl4py._cffi import (FIRST_CONSTANT,
-#                             LAST_CONSTANT)
+# Constants
+from jpeg4py._cffi import (TJSAMP_444,
+                           TJSAMP_422,
+                           TJSAMP_420,
+                           TJSAMP_GRAY,
+                           TJSAMP_440,
+                           TJPF_RGB,
+                           TJPF_BGR,
+                           TJPF_RGBX,
+                           TJPF_BGRX,
+                           TJPF_XBGR,
+                           TJPF_XRGB,
+                           TJPF_GRAY,
+                           TJPF_RGBA,
+                           TJPF_BGRA,
+                           TJPF_ABGR,
+                           TJPF_ARGB)
+
+# Mappings
+from jpeg4py._cffi import tjPixelSize
