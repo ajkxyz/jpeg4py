@@ -1,5 +1,6 @@
 include src/jpeg4py/*.py
 include tests/*.py
+include tests/*.jpg
 include LICENSE
 include README
 include README.md

@@ -16,6 +16,10 @@ tjInitDecompress
 tjDecompressHeader2
 tjDecompress2
 ```
+so, currently, only decoding of jpeg files is possible, and
+it was 1.3 times faster (on tests/test2.jpg and Ubuntu 13.10)
+than Image.open().tobytes() and scipy.misc.imread() in single thread
+and up to 9 times faster in multithreaded mode.
 
 
 Requirements:

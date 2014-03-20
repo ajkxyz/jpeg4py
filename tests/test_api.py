@@ -41,6 +41,7 @@ import logging
 import jpeg4py as jpeg
 import numpy
 import os
+import gc
 
 
 class Test(unittest.TestCase):
@@ -90,11 +91,25 @@ class Test(unittest.TestCase):
         return jp
 
     def test_clear(self):
+        gc.collect()
         jp = self.test_parse_header()
+        jp2 = self.test_parse_header()
         del jp
+        gc.collect()
         self.assertEqual(len(jpeg.JPEG.decompressors), 1)
+        del jp2
+        gc.collect()
+        self.assertEqual(len(jpeg.JPEG.decompressors), 2)
+        jp = self.test_parse_header()
+        self.assertEqual(len(jpeg.JPEG.decompressors), 1)
+        del jp
+        gc.collect()
         jpeg.JPEG.clear()
         self.assertEqual(len(jpeg.JPEG.decompressors), 0)
+        jp = self.test_parse_header()
+        self.assertEqual(len(jpeg.JPEG.decompressors), 0)
+        del jp
+        gc.collect()
 
     def test_decode(self):
         jp = self.test_parse_header()

@@ -37,6 +37,7 @@ Original author: Alexey Kazantsev <a.kazantsev@samsung.com>
 libjpeg-turbo cffi bindings.
 """
 import cffi
+import threading
 
 
 #: Subsumplings
@@ -78,6 +79,10 @@ lib = None
 NULL = ffi.NULL
 
 
+#: Lock
+lock = threading.Lock()
+
+
 def initialize(backends=("libturbojpeg.so.0",)):
     """Loads the shared library if it was not loaded yet.
 
@@ -86,6 +91,11 @@ def initialize(backends=("libturbojpeg.so.0",)):
     """
     global lib
     if lib is not None:
+        return
+    global lock
+    lock.acquire()
+    if lib is not None:
+        lock.release()
         return
     # C function definitions
     src = """
@@ -192,4 +202,6 @@ def initialize(backends=("libturbojpeg.so.0",)):
         except OSError:
             pass
     else:
+        lock.release()
         raise OSError("Could not load libjpeg-turbo library")
+    lock.release()

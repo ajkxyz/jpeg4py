@@ -39,6 +39,7 @@ Helper classes for libjpeg-turbo cffi bindings.
 import jpeg4py._cffi as jpeg
 from jpeg4py._cffi import ffi, TJPF_RGB
 import numpy
+import os
 
 
 class JPEGRuntimeError(RuntimeError):
@@ -131,8 +132,14 @@ class JPEG(Base):
         self.subsampling = None
         if hasattr(source, "__array_interface__"):
             self.source = source
-        else:
+        elif numpy.fromfile is not None:
             self.source = numpy.fromfile(source, dtype=numpy.uint8)
+        else:
+            fin = open(source, "rb")
+            self.source = numpy.empty(os.path.getsize(source),
+                                      dtype=numpy.uint8)
+            fin.readinto(self.source)
+            fin.close()
 
     def _get_decompressor(self):
         if self.decompressor is not None:
@@ -153,21 +160,24 @@ class JPEG(Base):
         Fills self.width, self.height, self.subsampling.
         """
         self._get_decompressor()
-        w = ffi.new("int[]", 1)
-        h = ffi.new("int[]", 1)
-        s = ffi.new("int[]", 1)
+        whs = ffi.new("int[]", 3)
+        whs_base = int(ffi.cast("size_t", whs))
+        whs_itemsize = int(ffi.sizeof("int"))
         n = self.lib_.tjDecompressHeader2(
             self.decompressor.handle_,
             ffi.cast("unsigned char*",
                      self.source.__array_interface__["data"][0]),
-            self.source.nbytes, w, h, s)
+            self.source.nbytes,
+            ffi.cast("int*", whs_base),
+            ffi.cast("int*", whs_base + whs_itemsize),
+            ffi.cast("int*", whs_base + whs_itemsize + whs_itemsize))
         if n:
             raise JPEGRuntimeError("tjDecompressHeader2() failed with error "
                                    "%d and error string %s" %
                                    (n, self.get_last_error()), n)
-        self.width = w[0]
-        self.height = h[0]
-        self.subsampling = s[0]
+        self.width = int(whs[0])
+        self.height = int(whs[1])
+        self.subsampling = int(whs[2])
 
     def decode(self, dst=None, pixfmt=TJPF_RGB):
         bpp = jpeg.tjPixelSize[pixfmt]
