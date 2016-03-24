@@ -37,7 +37,7 @@ Original author: Alexey Kazantsev <a.kazantsev@samsung.com>
 Helper classes for libjpeg-turbo cffi bindings.
 """
 import jpeg4py._cffi as jpeg
-from jpeg4py._cffi import ffi, TJPF_RGB
+from jpeg4py._cffi import TJPF_RGB
 import numpy
 import os
 
@@ -148,7 +148,7 @@ class JPEG(Base):
             self.decompressor = JPEG.decompressors.pop(-1)
         except IndexError:
             d = self.lib_.tjInitDecompress()
-            if d == jpeg.NULL:
+            if d == jpeg.ffi.NULL:
                 raise JPEGRuntimeError(
                     "tjInitDecompress() failed with error "
                     "string %s" % self.get_last_error(), 0)
@@ -160,17 +160,17 @@ class JPEG(Base):
         Fills self.width, self.height, self.subsampling.
         """
         self._get_decompressor()
-        whs = ffi.new("int[]", 3)
-        whs_base = int(ffi.cast("size_t", whs))
-        whs_itemsize = int(ffi.sizeof("int"))
+        whs = jpeg.ffi.new("int[]", 3)
+        whs_base = int(jpeg.ffi.cast("size_t", whs))
+        whs_itemsize = int(jpeg.ffi.sizeof("int"))
         n = self.lib_.tjDecompressHeader2(
             self.decompressor.handle_,
-            ffi.cast("unsigned char*",
-                     self.source.__array_interface__["data"][0]),
+            jpeg.ffi.cast("unsigned char*",
+                          self.source.__array_interface__["data"][0]),
             self.source.nbytes,
-            ffi.cast("int*", whs_base),
-            ffi.cast("int*", whs_base + whs_itemsize),
-            ffi.cast("int*", whs_base + whs_itemsize + whs_itemsize))
+            jpeg.ffi.cast("int*", whs_base),
+            jpeg.ffi.cast("int*", whs_base + whs_itemsize),
+            jpeg.ffi.cast("int*", whs_base + whs_itemsize + whs_itemsize))
         if n:
             raise JPEGRuntimeError("tjDecompressHeader2() failed with error "
                                    "%d and error string %s" %
@@ -198,10 +198,11 @@ class JPEG(Base):
         self._get_decompressor()
         n = self.lib_.tjDecompress2(
             self.decompressor.handle_,
-            ffi.cast("unsigned char*",
-                     self.source.__array_interface__["data"][0]),
+            jpeg.ffi.cast("unsigned char*",
+                          self.source.__array_interface__["data"][0]),
             self.source.nbytes,
-            ffi.cast("unsigned char*", dst.__array_interface__["data"][0]),
+            jpeg.ffi.cast("unsigned char*",
+                          dst.__array_interface__["data"][0]),
             dst.shape[1], dst.strides[0], dst.shape[0], pixfmt, 0)
         if n:
             raise JPEGRuntimeError("tjDecompress2() failed with error "

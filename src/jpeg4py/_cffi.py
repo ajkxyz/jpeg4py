@@ -68,34 +68,20 @@ tjPixelSize = {TJPF_RGB: 3, TJPF_BGR: 3, TJPF_RGBX: 4, TJPF_BGRX: 4,
 
 
 #: ffi parser
-ffi = cffi.FFI()
+ffi = None
 
 
 #: Loaded shared library
 lib = None
 
 
-#: cffi NULL pointer
-NULL = ffi.NULL
-
-
 #: Lock
 lock = threading.Lock()
 
 
-def initialize(backends=("libturbojpeg.so.0",)):
-    """Loads the shared library if it was not loaded yet.
-
-    Parameters:
-        backends: tuple of shared library file names to try to load.
-    """
+def _initialize(backends):
     global lib
     if lib is not None:
-        return
-    global lock
-    lock.acquire()
-    if lib is not None:
-        lock.release()
         return
     # C function definitions
     src = """
@@ -192,6 +178,7 @@ def initialize(backends=("libturbojpeg.so.0",)):
 
     # Parse
     global ffi
+    ffi = cffi.FFI()
     ffi.cdef(src)
 
     # Load library
@@ -202,6 +189,24 @@ def initialize(backends=("libturbojpeg.so.0",)):
         except OSError:
             pass
     else:
-        lock.release()
+        ffi = None
         raise OSError("Could not load libjpeg-turbo library")
-    lock.release()
+
+
+def initialize(
+        backends=(
+        "libturbojpeg.so.0",  # for Ubuntu
+        "turbojpeg.dll",  # for Windows
+        "/opt/libjpeg-turbo/lib64/libturbojpeg.0.dylib",  # for Mac OS X
+        )):
+    """Loads the shared library if it was not loaded yet.
+
+    Parameters:
+        backends: tuple of shared library file names to try to load.
+    """
+    global lib
+    if lib is not None:
+        return
+    global lock
+    with lock:
+        _initialize(backends)

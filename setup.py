@@ -42,7 +42,7 @@ from distutils.core import setup
 setup(
     name="jpeg4py",
     description="libjpeg-turbo cffi bindings and helper classes",
-    version="0.1.0",
+    version="0.1.1",
     license="Simplified BSD",
     author="Samsung Electronics Co.,Ltd.",
     author_email="a.kazantsev@samsung.com",
@@ -60,6 +60,7 @@ setup(
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.2",
         "Programming Language :: Python :: 3.3",
+        "Programming Language :: Python :: 3.4",
         "Topic :: Software Development :: Libraries"
     ]
 )
