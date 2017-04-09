@@ -68,7 +68,7 @@ class Base(object):
     def get_last_error(self):
         """Returns last error string.
         """
-        return ffi.string(self.lib_.tjGetErrorStr()).decode("utf-8")
+        return jpeg.ffi.string(self.lib_.tjGetErrorStr()).decode("utf-8")
 
 
 class Handle(Base):
@@ -92,9 +92,6 @@ class Handle(Base):
             self.lib_.tjDestroy(self.handle_)
             self.handle_ = None
 
-    def __del__(self):
-        self.release()
-
 
 class JPEG(Base):
     """Main class.
@@ -117,6 +114,9 @@ class JPEG(Base):
     def clear():
         """Clears internal caches.
         """
+        # Manually release cached JPEG decompressors
+        for handle in reversed(JPEG.decompressors):
+            handle.release()
         del JPEG.decompressors[:]
 
     def __init__(self, source, lib_=None):
