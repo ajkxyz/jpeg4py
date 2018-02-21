@@ -50,6 +50,7 @@ setup(
     download_url='https://github.com/ajkxyz/jpeg4py',
     packages=["jpeg4py"],
     package_dir={"jpeg4py": "src/jpeg4py"},
+    install_requires=["cffi"],
     keywords=["libjpeg-turbo", "jpeg4py"],
     classifiers=[
         "Development Status :: 4 - Beta",
