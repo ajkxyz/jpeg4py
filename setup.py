@@ -30,22 +30,25 @@ either expressed or implied, of Samsung Electronics Co.,Ltd..
 """
 jpeg4py - libjpeg-turbo cffi bindings and helper classes.
 URL: https://github.com/ajkxyz/jpeg4py
-Original author: Alexey Kazantsev <a.kazantsev@samsung.com>
+Original author: Alexey Kazantsev <ajk.xyz@gmail.com>
 """
 
 """
 Setup script.
 """
-from distutils.core import setup
+try:
+    from setuptools import setup
+except ImportError:
+    from distutils.core import setup
 
 
 setup(
     name="jpeg4py",
     description="libjpeg-turbo cffi bindings and helper classes",
-    version="0.1.2",
+    version="0.1.3",
     license="Simplified BSD",
     author="Samsung Electronics Co.,Ltd.",
-    author_email="a.kazantsev@samsung.com",
+    author_email="ajk.xyz@gmail.com",
     url="https://github.com/ajkxyz/jpeg4py",
     download_url='https://github.com/ajkxyz/jpeg4py',
     packages=["jpeg4py"],
