@@ -45,7 +45,7 @@ except ImportError:
 setup(
     name="jpeg4py",
     description="libjpeg-turbo cffi bindings and helper classes",
-    version="0.1.3",
+    version="0.1.4",
     license="Simplified BSD",
     author="Samsung Electronics Co.,Ltd.",
     author_email="ajk.xyz@gmail.com",
